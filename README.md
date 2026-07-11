@@ -52,6 +52,26 @@ Both classes use the `application/toon` media type. Send requests with
 `Content-Type: application/toon` to parse, and `Accept: application/toon`
 (or `?format=toon`) to render.
 
+## Development
+
+Install the dev dependencies and run the checks with uv:
+
+```bash
+uv sync --dev
+
+uv run ruff check .          # lint
+uv run ruff format .         # format
+uv run ruff format --check . # format check (CI)
+uv run mypy                  # type check
+uv run pytest                # tests + coverage
+```
+
+Optionally install the git hooks:
+
+```bash
+uv run pre-commit install
+```
+
 ## License
 
 MIT
