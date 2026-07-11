@@ -6,6 +6,19 @@ TOON is a token-efficient serialization format designed for LLM contexts. It can
 
 `drf-toon` is built on [`toons`](https://github.com/alesanfra/toons), a high-performance Rust implementation meant to mimic the native python `json` package.
 
+## Compatibility
+
+`drf-toon` supports **Django 5.2 LTS** on **Python 3.10–3.13**, matching
+Django's own [support matrix](https://docs.djangoproject.com/en/stable/faq/install/#what-python-version-can-i-use-with-django).
+Every supported Python version is exercised in CI.
+
+| Django  | Python                 |
+| ------- | ---------------------- |
+| 5.2 LTS | 3.10, 3.11, 3.12, 3.13 |
+
+Support for additional Django releases can be added later by extending the CI
+matrix.
+
 ## Installation
 
 ```bash

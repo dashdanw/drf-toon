@@ -40,8 +40,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Django 5.2 LTS supports Python 3.10 - 3.13.
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    name: "py${{ matrix.python-version }} / django 5.2"
     steps:
       - uses: actions/checkout@v4
 
