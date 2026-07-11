@@ -1,10 +1,29 @@
+# Install both commit- and push-stage hooks with:
+#   uv run pre-commit install --install-hooks
+# default_install_hook_types wires up pre-push automatically.
+default_install_hook_types: [pre-commit, pre-push]
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
     hooks:
+      # Fast autofix + format at commit time.
       - id: ruff
         args: [--fix]
+        stages: [pre-commit]
       - id: ruff-format
+        stages: [pre-commit]
+      # Block the push if linting/formatting is not clean (no autofix).
+      - id: ruff
+        alias: ruff-push
+        name: ruff (lint check, pre-push)
+        args: [--no-fix]
+        stages: [pre-push]
+      - id: ruff-format
+        alias: ruff-format-push
+        name: ruff-format (check, pre-push)
+        args: [--check]
+        stages: [pre-push]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -14,4 +33,3 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict
-

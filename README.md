@@ -2,7 +2,7 @@
 
 Native [TOON](https://toonformat.dev/) (Token Oriented Object Notation) parser and renderer for [Django REST Framework](https://www.django-rest-framework.org/).
 
-TOON is a token-efficient serialization format designed for LLM contexts. It can result in **30–60% fewer tokens** than JSON. 
+TOON is a token-efficient serialization format designed for LLM contexts. It can result in **30–60% fewer tokens** than JSON.
 
 `drf-toon` is built on [`toons`](https://github.com/alesanfra/toons), a high-performance Rust implementation meant to mimic the native python `json` package.
 
@@ -82,10 +82,12 @@ uv run pytest                # tests + coverage
 Optionally install the git hooks:
 
 ```bash
-uv run pre-commit install
+uv run pre-commit install --install-hooks
 ```
+
+This wires up both a **pre-commit** hook (autofix + format) and a **pre-push**
+hook that blocks the push if the code is not properly linted/formatted.
 
 ## License
 
 MIT
-
