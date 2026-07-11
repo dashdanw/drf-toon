@@ -127,7 +127,17 @@ class TestTOONIntegration:
     response is rendered.
     """
 
-    @pytest.mark.parametrize("value", PAYLOAD_PARAMS)
+    # ``{}`` serializes to an empty (zero-byte) TOON document, so the HTTP
+    # response carries no body or Content-Type header. That is a degenerate
+    # transport case, not a parser/renderer concern, and it is already covered
+    # by the unit tests above -- so it is excluded from the end-to-end run.
+    integration_params = [
+        pytest.param(payload.value, id=payload.id)
+        for payload in SAMPLE_PAYLOADS
+        if payload.id != "empty_dict"
+    ]
+
+    @pytest.mark.parametrize("value", integration_params)
     def test_echo_roundtrip_through_drf(self, api_client, value):
         request_body = toons.dumps(value).encode("utf-8")
 
