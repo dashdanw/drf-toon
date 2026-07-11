@@ -21,8 +21,17 @@ matrix.
 
 ## Installation
 
+Until `drf-toon` is published to PyPI, install it directly from the git
+repository:
+
 ```bash
-pip install drf-toon
+pip install git+https://github.com/dashdanw/drf-toon.git
+```
+
+Or, with uv:
+
+```bash
+uv add git+https://github.com/dashdanw/drf-toon.git
 ```
 
 ## Usage
