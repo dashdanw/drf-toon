@@ -1,0 +1,123 @@
+version = 1
+revision = 3
+requires-python = ">=3.11"
+resolution-markers = [
+    "python_full_version >= '3.12'",
+    "python_full_version < '3.12'",
+]
+
+[[package]]
+name = "asgiref"
+version = "3.11.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/40/f03da1264ae8f7cfdbf9146542e5e7e8100a4c66ab48e791df9a03d3f6c0/asgiref-3.11.1.tar.gz", hash = "sha256:5f184dc43b7e763efe848065441eac62229c9f7b0475f41f80e207a114eda4ce", size = 38550, upload-time = "2026-02-03T13:30:14.33Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5c/0a/a72d10ed65068e115044937873362e6e32fab1b7dce0046aeb224682c989/asgiref-3.11.1-py3-none-any.whl", hash = "sha256:e8667a091e69529631969fd45dc268fa79b99c92c5fcdda727757e52146ec133", size = 24345, upload-time = "2026-02-03T13:30:13.039Z" },
+]
+
+[[package]]
+name = "django"
+version = "5.2.16"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.12'",
+]
+dependencies = [
+    { name = "asgiref", marker = "python_full_version < '3.12'" },
+    { name = "sqlparse", marker = "python_full_version < '3.12'" },
+    { name = "tzdata", marker = "python_full_version < '3.12' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a9/26/889449d521ae508b26de715954faecd8bcf3f740affb81b2d146a83b42a5/django-5.2.16.tar.gz", hash = "sha256:59ea02020c3136fce14bef0bbece21a10a4febef5eed1c51c22ae468efa22200", size = 10890894, upload-time = "2026-07-07T13:52:17.005Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/13/1e5e3e4c15dcecb04281b3cb2a46a4670e1cef131068e202f6040df19224/django-5.2.16-py3-none-any.whl", hash = "sha256:04f354bf9d807a86ad1a8392fe3808d362358a8eafc322848e0e43e59b24371d", size = 8311943, upload-time = "2026-07-07T13:52:11.223Z" },
+]
+
+[[package]]
+name = "django"
+version = "6.0.7"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12'",
+]
+dependencies = [
+    { name = "asgiref", marker = "python_full_version >= '3.12'" },
+    { name = "sqlparse", marker = "python_full_version >= '3.12'" },
+    { name = "tzdata", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/89/55/664f24ff81c9ea19cb7dfc851afeae1f3c2390c7aee01d4ded68b5c1580d/django-6.0.7.tar.gz", hash = "sha256:2998503fc083124fb58037084bfa00de323c7c743f05f1b4284e77bff0ab8890", size = 10921299, upload-time = "2026-07-07T13:51:26.485Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ba/ec/1ce5334b6a2c52ce619c23a0be8d366a57a0e080ebb2d88266e5c849157c/django-6.0.7-py3-none-any.whl", hash = "sha256:a037427c2288443a8c02a1b02295a31c239663aa682bc50b1976afb7cf6a769e", size = 8373344, upload-time = "2026-07-07T13:51:20.007Z" },
+]
+
+[[package]]
+name = "djangorestframework"
+version = "3.17.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.16", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ca/d7/c016e69fac19ff8afdc89db9d31d9ae43ae031e4d1993b20aca179b8301a/djangorestframework-3.17.1.tar.gz", hash = "sha256:a6def5f447fe78ff853bff1d47a3c59bf38f5434b031780b351b0c73a62db1a5", size = 905742, upload-time = "2026-03-24T16:58:33.705Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5a/e1/2c516bdc83652b1a60c6119366ac2c0607b479ed05cd6093f916ca8928f8/djangorestframework-3.17.1-py3-none-any.whl", hash = "sha256:c3c74dd3e83a5a3efc37b3c18d92bd6f86a6791c7b7d4dff62bb068500e76457", size = 898844, upload-time = "2026-03-24T16:58:31.845Z" },
+]
+
+[[package]]
+name = "drf-toon"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "django", version = "5.2.16", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "djangorestframework" },
+    { name = "toons" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "django", specifier = ">=5.2.16" },
+    { name = "djangorestframework", specifier = ">=3.17.1" },
+    { name = "toons", specifier = ">=0.7.0" },
+]
+
+[[package]]
+name = "sqlparse"
+version = "0.5.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/76/437d71068094df0726366574cf3432a4ed754217b436eb7429415cf2d480/sqlparse-0.5.5.tar.gz", hash = "sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e", size = 120815, upload-time = "2025-12-19T07:17:45.073Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/49/4b/359f28a903c13438ef59ebeee215fb25da53066db67b305c125f1c6d2a25/sqlparse-0.5.5-py3-none-any.whl", hash = "sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba", size = 46138, upload-time = "2025-12-19T07:17:46.573Z" },
+]
+
+[[package]]
+name = "toons"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/23/1d9a6fdc56dccf9c7d22377618adff8d25a12a9214a8fab5c8286e50c527/toons-0.7.0.tar.gz", hash = "sha256:d196a29319bf4ec1481d1f06a05017b859652d112a52eb7071d33c6da28b8193", size = 234510, upload-time = "2026-05-21T21:55:28.754Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7d/23/b45ad15a8eb21a9109e7fe9bbd04e005b4ea8c35b9dea98023f1a585baeb/toons-0.7.0-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:08f380080e3a54ad53ed6baa1eaa35d4767a7e31436bd05af97b3cc00a6936b5", size = 304442, upload-time = "2026-05-21T21:55:46.341Z" },
+    { url = "https://files.pythonhosted.org/packages/41/36/dff71444f52f82031c8f4a86f2a212d8d7bdb05e00f8559144e6ff3b31b7/toons-0.7.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:30bb78650744dfe53a080d683e5b55c3e90fa24d8f1713bb4237d66282e92d9c", size = 300813, upload-time = "2026-05-21T21:55:31.308Z" },
+    { url = "https://files.pythonhosted.org/packages/19/93/7d5162a15f46ddc794f16aeb0eb8b12e39d02c6a585b13ff2425b8758970/toons-0.7.0-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b28eb732f13b1909eb0ac9d32f4e39b6f279081fdaf24f0bce320dbf4cde015f", size = 332617, upload-time = "2026-05-21T21:55:29.912Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/24/806d3b3c9d86ca202a858d5dcaa862616cd3ee5e52cf9507b2fe6e3acb4f/toons-0.7.0-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5468da364bbb3eadd860495148b035f74f9e51b3c83ed8ea9f761938b2a602d1", size = 340984, upload-time = "2026-05-21T21:55:37.282Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/ff/de05d3bbe0c8b860c71d4d025b6306ee66a988efc1bcd3fe43a419cb717a/toons-0.7.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:1bb17238ac0853b92f01452c1cf438157b0b4d602ec2e2c9f425ee57cd81a41b", size = 508422, upload-time = "2026-05-21T21:55:32.808Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/7b/ecefbc3fd2d89a8240c347bcc81bd19fb821c9b141c3ec3479ce0c9e5af4/toons-0.7.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:637994ae2e58782a35d0c5ab0b16c802624c3e6850da41250ba3c953118bce49", size = 543302, upload-time = "2026-05-21T21:55:35.602Z" },
+    { url = "https://files.pythonhosted.org/packages/27/a6/948b6b2639849d488a6f4310c8f9abb3486250d130e467e758f9ce79b0b2/toons-0.7.0-cp314-cp314t-win_amd64.whl", hash = "sha256:b987602c142b945745b2379b8079171fd6d928b4edd6e2162a3f735db6ca73d7", size = 196411, upload-time = "2026-05-21T21:55:48.712Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/4f/4b627ec63f45cafd071b449678567ca57342715dff797159dc34b6e91fa4/toons-0.7.0-cp314-cp314t-win_arm64.whl", hash = "sha256:cac4faa2f3f8da96bc13ccad8cf554f82810f681b02ea27d0a4f79bed3e7ac83", size = 190350, upload-time = "2026-05-21T21:55:38.799Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/43/2d4d6cd43635130154a57fd45cee8494fd66c4ae73d0d9c17331ebf30637/toons-0.7.0-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:7933216d41175af1747d4475ae2f947178ac45fd7f8b839a5bcbda57b5c99301", size = 312469, upload-time = "2026-05-21T21:55:42.833Z" },
+    { url = "https://files.pythonhosted.org/packages/97/e6/cd600e0461cc9e7b74d8723e010da92efe90136350d9835af1a9f10bfa0e/toons-0.7.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:10681fd930ee555df213fe0a19675ddd1095f4291999ab507adb0833fa01e47d", size = 308194, upload-time = "2026-05-21T21:55:41.459Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/e5/032c014b33cf954ef502326de78466e6ce440f3419b6c9d54721a895936a/toons-0.7.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0b45b0a429c22e3b0e7f658d8cbfeb03b1ab4798b2323c7c119fe5029fdaaf1c", size = 339568, upload-time = "2026-05-21T21:55:47.351Z" },
+    { url = "https://files.pythonhosted.org/packages/41/39/6e3c0752b7a1f693fb7082ecc5d3757884537a102d2c846a5a24d7de4b47/toons-0.7.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:18fd8f455c2bfa6655c4eaf931dd8e321be0b53a4f2acbc91e77f72843a0f7b9", size = 348803, upload-time = "2026-05-21T21:55:34.189Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/bd/d495738cc5e1c201a864a75b0520fdb74fcd2a8c631a61efc993fb8f992f/toons-0.7.0-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:7e92ed900fee3a7db0467573bba29c876a1701827836b895d13891a3f5d04567", size = 516042, upload-time = "2026-05-21T21:55:49.827Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/c5/bb5f09db2100631bef2ab39545611958545f6ef3b7d0f56d85af341fd0f8/toons-0.7.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:611d3db35614ec8f5f7c00accb38787c4db0e34f98bdbc0746e196cab32d45ba", size = 551947, upload-time = "2026-05-21T21:55:39.868Z" },
+    { url = "https://files.pythonhosted.org/packages/65/fa/43f86b3862448159ca6434942822aa31dec02b848967474e94cc1f568154/toons-0.7.0-cp37-abi3-win_amd64.whl", hash = "sha256:56c79eb7e3a9155a564f5ca1fe10f2a93e0e534c82bc9d7c7c047267e472a2f5", size = 202369, upload-time = "2026-05-21T21:55:44.928Z" },
+    { url = "https://files.pythonhosted.org/packages/04/9e/bfa4d07d215ea248818b85bc1bec8664eec1728e0704c773a252c4ac7d82/toons-0.7.0-cp37-abi3-win_arm64.whl", hash = "sha256:b1f53e0c9f40439f426050050f34a1e8b495ff4f702bfa460142929ad7e08c8c", size = 196225, upload-time = "2026-05-21T21:55:27.253Z" },
+]
+
+[[package]]
+name = "tzdata"
+version = "2026.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/ff/5a28bdfd8c3ebec42564ac7d0e54ca3db65044a9314a97f9564fa7a1e926/tzdata-2026.3.tar.gz", hash = "sha256:4a1518b8993086a7982523e071643f3c0e5f213e75b21318e78bcabfff9d1415", size = 198674, upload-time = "2026-07-10T08:50:37.887Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e5/6d/b53b99a9f2766d095985947a5782f1702cabb129a34f7a802d7197af832f/tzdata-2026.3-py2.py3-none-any.whl", hash = "sha256:dc096730c87af6cab1b171c9d532be840741ff5d459015e7f6947bd7d7e54931", size = 348168, upload-time = "2026-07-10T08:50:36.46Z" },
+]
