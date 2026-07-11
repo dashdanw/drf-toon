@@ -1,7 +1,7 @@
 [project]
 name = "drf-toon"
 version = "0.1.0"
-description = "Add your description here"
+description = "Native TOON parser and renderer for Django Rest Framework."
 readme = "README.md"
 authors = [
     { name = "Dash Winterson", email = "dashdanw@gmail.com" }
