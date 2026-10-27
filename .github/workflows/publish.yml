@@ -5,16 +5,35 @@ on:
     types: [published]
 
 jobs:
+  # A release must pass the same checks as CI before anything is published.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Lint, type check and test
+        run: make check
+
   build-and-publish:
+    needs: check
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write  # trusted publishing to PyPI
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           enable-cache: true
 
@@ -26,4 +45,3 @@ jobs:
 
       - name: Publish to PyPI
         run: uv publish
-

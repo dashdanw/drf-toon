@@ -74,6 +74,22 @@ Both classes use the `application/toon` media type. Send requests with
 `Content-Type: application/toon` to parse, and `Accept: application/toon`
 (or `?format=toon`) to render.
 
+## Security notes
+
+- **Request size:** `TOONParser` reads the whole body into memory. Like DRF's own parsers it
+  does not cap the size, so set a body limit in your reverse proxy.
+- **Charset:** only text charsets are accepted. Compression "charsets" such as `zlib` or `bz2`
+  are rejected with a 400, and invalid bytes also return a 400.
+- **Depth limits:** `toons` crashes the process on extremely deep documents, so
+  `TOONParser.max_indent` (default 2000 leading spaces) and `TOONRenderer.max_depth`
+  (default 128 levels) reject them first. Both can be overridden in a subclass.
+- **Rendering:** values are normalized the way `JSONRenderer` does it before reaching `toons`
+  (UUIDs, dates, `Decimal`, sets, `bytes`, non-string keys). Integers beyond 64 bits are
+  rendered as strings so they keep their precision. `NaN` and `Infinity` render as `null`,
+  as the TOON spec requires.
+- **Parsing numbers:** `toons` turns integers beyond 64 bits into floats and out-of-range
+  floats into `inf`. Validate numeric fields with a DRF serializer.
+
 ## Development
 
 Install the dev dependencies and run the checks with uv:
