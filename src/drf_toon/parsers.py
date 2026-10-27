@@ -1,6 +1,4 @@
-import re
-
-import toons
+import toon_format
 from django.conf import settings
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import BaseParser
@@ -8,12 +6,6 @@ from rest_framework.parsers import BaseParser
 
 class TOONParser(BaseParser):
     media_type = "application/toon"
-
-    # Deepest indentation, in leading spaces, that a document may use. ``toons`` parses
-    # recursively in native code and crashes the whole process (SIGSEGV) on extremely
-    # deep documents, which cannot be caught from Python. Every nesting level needs at
-    # least one space of indentation, so bounding the indentation bounds the depth.
-    max_indent = 2000
 
     def parse(self, stream, media_type=None, parser_context=None):
         parser_context = parser_context or {}
@@ -29,10 +21,7 @@ class TOONParser(BaseParser):
         except UnicodeError as e:
             raise ParseError(f"TOON parse error - body is not valid {encoding}") from e
 
-        if re.search(rf"^ {{{self.max_indent + 1}}}", text, re.MULTILINE):
-            raise ParseError("TOON parse error - document is nested too deeply")
-
         try:
-            return toons.loads(text)
-        except toons.ToonDecodeError as e:
+            return toon_format.loads(text)
+        except toon_format.ToonDecodeError as e:
             raise ParseError(f"TOON parse error - {str(e)}") from e

@@ -1,6 +1,6 @@
 [project]
 name = "drf-toon"
-version = "0.1.0"
+version = "0.3.0"
 description = "Native TOON parser and renderer for Django Rest Framework."
 readme = "README.md"
 authors = [
@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "django>=5.2.17,<6.0",
     "djangorestframework>=3.18.2",
-    "toons>=0.7.0",
+    "toon-format>=1.2.0",
 ]
 
 [build-system]

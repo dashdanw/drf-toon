@@ -4,7 +4,7 @@ Native [TOON](https://toonformat.dev/) (Token Oriented Object Notation) parser a
 
 TOON is a token-efficient serialization format designed for LLM contexts. It can result in **30–60% fewer tokens** than JSON.
 
-`drf-toon` is built on [`toons`](https://github.com/alesanfra/toons), a high-performance Rust implementation meant to mimic the native python `json` package.
+`drf-toon` is built on [`toon-format`](https://github.com/toon-format/toon-python), the official pure-Python TOON implementation, which follows the interface of the standard `json` module.
 
 ## Compatibility
 
@@ -21,17 +21,14 @@ matrix.
 
 ## Installation
 
-Until `drf-toon` is published to PyPI, install it directly from the git
-repository:
-
 ```bash
-pip install git+https://github.com/dashdanw/drf-toon.git
+pip install drf-toon
 ```
 
 Or, with uv:
 
 ```bash
-uv add git+https://github.com/dashdanw/drf-toon.git
+uv add drf-toon
 ```
 
 ## Usage
@@ -42,12 +39,12 @@ Add the parser and renderer to your DRF settings:
 # settings.py
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
-        "drf_toon.parsers.TOONParser",
         "rest_framework.parsers.JSONParser",
+        "drf_toon.parsers.TOONParser",
     ],
     "DEFAULT_RENDERER_CLASSES": [
-        "drf_toon.renderers.TOONRenderer",
         "rest_framework.renderers.JSONRenderer",
+        "drf_toon.renderers.TOONRenderer",
     ],
 }
 ```
@@ -74,21 +71,31 @@ Both classes use the `application/toon` media type. Send requests with
 `Content-Type: application/toon` to parse, and `Accept: application/toon`
 (or `?format=toon`) to render.
 
+DRF answers `Accept: */*` with the first renderer, so list `JSONRenderer`
+first to keep JSON the default and serve TOON only when it is requested.
+
+The renderer encodes values through DRF's JSON encoder first, so `UUID`,
+`datetime`, `date` and `Decimal` values render as they do in JSON. `None`
+renders an empty body (like `JSONRenderer`), and `{}` renders a single
+newline, which is the same empty document but keeps DRF from dropping the
+`Content-Type` header.
+
 ## Security notes
 
 - **Request size:** `TOONParser` reads the whole body into memory. Like DRF's own parsers it
   does not cap the size, so set a body limit in your reverse proxy.
 - **Charset:** only text charsets are accepted. Compression "charsets" such as `zlib` or `bz2`
   are rejected with a 400, and invalid bytes also return a 400.
-- **Depth limits:** `toons` crashes the process on extremely deep documents, so
-  `TOONParser.max_indent` (default 2000 leading spaces) and `TOONRenderer.max_depth`
-  (default 128 levels) reject them first. Both can be overridden in a subclass.
-- **Rendering:** values are normalized the way `JSONRenderer` does it before reaching `toons`
-  (UUIDs, dates, `Decimal`, sets, `bytes`, non-string keys). Integers beyond 64 bits are
-  rendered as strings so they keep their precision. `NaN` and `Infinity` render as `null`,
-  as the TOON spec requires.
-- **Parsing numbers:** `toons` turns integers beyond 64 bits into floats and out-of-range
-  floats into `inf`. Validate numeric fields with a DRF serializer.
+- **Malformed input:** documents that `toon-format` rejects (duplicate keys, out-of-range or
+  oversized numbers, excessive nesting, wrong declared array lengths) return a 400.
+- **Rendering:** values are encoded through DRF's JSON encoder first, so circular references,
+  non-finite floats and unsupported types raise an error instead of rendering silently.
+
+## Performance
+
+`toon-format` is pure Python, so it is slower than the Rust `toons` package that versions up to
+0.2.0 used. As a rough guide, 10,000 small records take about 90 ms to render and 110 ms to
+parse. Consider this when serving very large responses.
 
 ## Development
 
