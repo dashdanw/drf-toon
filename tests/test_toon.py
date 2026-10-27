@@ -49,7 +49,7 @@ class TestTOONRenderer:
         rendered = renderer.render(value)
 
         assert isinstance(rendered, bytes)
-        assert rendered == toons.dumps(value).encode(renderer.charset)
+        assert rendered == (toons.dumps(value).encode(renderer.charset) or b"\n")
 
     @pytest.mark.parametrize("value", RENDER_PARAMS)
     def test_render_is_parseable_back(self, value):
@@ -78,6 +78,12 @@ class TestTOONRenderer:
             "on": "2026-01-02",
             "amount": 1.5,
         }
+
+    def test_render_empty_object_is_a_non_empty_document(self):
+        rendered = TOONRenderer().render({})
+
+        assert rendered == b"\n"
+        assert toons.loads(rendered.decode()) == {}
 
     def test_render_returns_empty_body_for_no_data(self):
         assert TOONRenderer().render(None) == b""
@@ -161,14 +167,13 @@ class TestTOONIntegration:
     response is rendered.
     """
 
-    # ``{}`` serializes to an empty (zero-byte) TOON document and ``None`` renders an empty body,
-    # so the HTTP response carries no body or Content-Type header. That is a degenerate transport
-    # case, not a parser/renderer concern, and it is already covered by the unit tests above -- so
-    # both are excluded from the end-to-end run.
+    # ``None`` renders an empty body, so the HTTP response carries no body or Content-Type header.
+    # That is a degenerate transport case, not a parser/renderer concern, and it is already covered
+    # by the unit tests above -- so it is excluded from the end-to-end run.
     integration_params = [
         pytest.param(payload.value, id=payload.id)
         for payload in SAMPLE_PAYLOADS
-        if payload.id not in {"empty_dict", "none"}
+        if payload.id != "none"
     ]
 
     @pytest.mark.parametrize("value", integration_params)

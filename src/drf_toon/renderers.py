@@ -12,4 +12,6 @@ class TOONRenderer(BaseRenderer):
         if data is None:
             return b""
         # toons only serializes plain JSON types; DRF's encoder handles UUID, datetime, Decimal...
-        return toons.dumps(json.loads(JSONRenderer().render(data))).encode(self.charset)
+        rendered = toons.dumps(json.loads(JSONRenderer().render(data))).encode(self.charset)
+        # `{}` is zero bytes, so DRF would drop Content-Type; a newline is the same document.
+        return rendered or b"\n"
