@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import io
 import uuid
+import zlib
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import pytest
-import toons
+import toon_format
 from rest_framework.exceptions import ParseError
 
 from drf_toon.parsers import TOONParser
@@ -35,7 +36,7 @@ RENDER_PARAMS = [
 
 def _make_stream(value: object) -> io.BytesIO:
     """Serialize ``value`` to TOON bytes and wrap it in a byte stream."""
-    return io.BytesIO(toons.dumps(value).encode("utf-8"))
+    return io.BytesIO(toon_format.dumps(value).encode("utf-8"))
 
 
 # --------------------------------------------------------------------------- #
@@ -43,13 +44,13 @@ def _make_stream(value: object) -> io.BytesIO:
 # --------------------------------------------------------------------------- #
 class TestTOONRenderer:
     @pytest.mark.parametrize("value", RENDER_PARAMS)
-    def test_render_matches_toons_dumps(self, value):
+    def test_render_matches_toon_format_dumps(self, value):
         renderer = TOONRenderer()
 
         rendered = renderer.render(value)
 
         assert isinstance(rendered, bytes)
-        assert rendered == (toons.dumps(value).encode(renderer.charset) or b"\n")
+        assert rendered == (toon_format.dumps(value).encode(renderer.charset) or b"\n")
 
     @pytest.mark.parametrize("value", RENDER_PARAMS)
     def test_render_is_parseable_back(self, value):
@@ -57,9 +58,9 @@ class TestTOONRenderer:
 
         rendered = renderer.render(value)
 
-        assert toons.loads(rendered.decode(renderer.charset)) == value
+        assert toon_format.loads(rendered.decode(renderer.charset)) == value
 
-    def test_render_encodes_types_toons_cannot_serialize(self):
+    def test_render_encodes_types_toon_format_cannot_serialize(self):
         renderer = TOONRenderer()
         pk = uuid.uuid4()
 
@@ -72,7 +73,7 @@ class TestTOONRenderer:
             }
         )
 
-        assert toons.loads(rendered.decode(renderer.charset)) == {
+        assert toon_format.loads(rendered.decode(renderer.charset)) == {
             "id": str(pk),
             "at": "2026-01-02T03:04:05Z",
             "on": "2026-01-02",
@@ -83,10 +84,45 @@ class TestTOONRenderer:
         rendered = TOONRenderer().render({})
 
         assert rendered == b"\n"
-        assert toons.loads(rendered.decode()) == {}
+        assert toon_format.loads(rendered.decode()) == {}
 
     def test_render_returns_empty_body_for_no_data(self):
         assert TOONRenderer().render(None) == b""
+
+    def test_non_string_keys_are_coerced_like_json(self):
+        rendered = TOONRenderer().render({1: "a", 1.5: "b", None: "c"})
+
+        assert toon_format.loads(rendered.decode()) == {"1": "a", "1.5": "b", "null": "c"}
+
+    def test_integers_beyond_64_bits_keep_precision(self):
+        rendered = TOONRenderer().render({"n": 2**100})
+
+        assert toon_format.loads(rendered.decode()) == {"n": 2**100}
+
+    def test_unsupported_key_raises(self):
+        with pytest.raises(TypeError):
+            TOONRenderer().render({(1, 2): "a"})
+
+    def test_circular_reference_raises(self):
+        data: dict = {}
+        data["self"] = data
+
+        with pytest.raises(ValueError, match="ircular"):
+            TOONRenderer().render(data)
+
+    def test_extremely_deep_data_raises_instead_of_crashing(self):
+        data: dict = {}
+        node = data
+        for _ in range(100_000):
+            node["a"] = {}
+            node = node["a"]
+
+        with pytest.raises(RecursionError):
+            TOONRenderer().render(data)
+
+    def test_non_finite_floats_are_rejected_like_json(self):
+        with pytest.raises(ValueError):
+            TOONRenderer().render({"n": float("nan")})
 
     def test_media_type_and_format(self):
         renderer = TOONRenderer()
@@ -104,7 +140,7 @@ class TestTOONRenderer:
             renderer_context={"response": None},
         )
 
-        assert rendered == toons.dumps({"a": 1}).encode(renderer.charset)
+        assert rendered == toon_format.dumps({"a": 1}).encode(renderer.charset)
 
 
 # --------------------------------------------------------------------------- #
@@ -125,11 +161,50 @@ class TestTOONParser:
     def test_parse_uses_provided_encoding(self):
         parser = TOONParser()
         value = {"name": "héllo", "emoji": "🌍"}
-        stream = io.BytesIO(toons.dumps(value).encode("utf-8"))
+        stream = io.BytesIO(toon_format.dumps(value).encode("utf-8"))
 
         result = parser.parse(stream, parser_context={"encoding": "utf-8"})
 
         assert result == value
+
+    @pytest.mark.parametrize("codec", ["zlib", "bz2", "hex", "base64"])
+    def test_non_text_codec_is_rejected_without_decoding(self, codec):
+        with pytest.raises(ParseError, match="unsupported charset"):
+            TOONParser().parse(io.BytesIO(b"a: 1"), parser_context={"encoding": codec})
+
+    def test_unknown_charset_is_rejected(self):
+        with pytest.raises(ParseError, match="unsupported charset"):
+            TOONParser().parse(io.BytesIO(b"a: 1"), parser_context={"encoding": "bogus"})
+
+    def test_invalid_utf8_raises_parse_error(self):
+        with pytest.raises(ParseError, match="not valid"):
+            TOONParser().parse(io.BytesIO(b"a: \xff\xfe"))
+
+    def test_other_text_charsets_still_work(self):
+        stream = io.BytesIO("a: héllo".encode("utf-16"))
+
+        assert TOONParser().parse(stream, parser_context={"encoding": "utf-16"}) == {"a": "héllo"}
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            b"a: 1e400",
+            b"a: " + b"9" * 5000,
+            b"a: 1\na: 2",
+            b"[1000000000]: 1,2",
+        ],
+        ids=["out-of-range-float", "huge-integer", "duplicate-key", "declared-length"],
+    )
+    def test_documents_toon_format_rejects_raise_parse_error(self, body):
+        with pytest.raises(ParseError):
+            TOONParser().parse(io.BytesIO(body))
+
+    def test_extremely_deep_document_raises_parse_error(self):
+        depth = 5_000
+        text = "".join("  " * i + "a:\n" for i in range(depth)) + "  " * depth + "x: 1\n"
+
+        with pytest.raises(ParseError, match="nested too deeply"):
+            TOONParser().parse(io.BytesIO(text.encode()))
 
     def test_parse_invalid_toon_raises_parse_error(self):
         parser = TOONParser()
@@ -178,7 +253,7 @@ class TestTOONIntegration:
 
     @pytest.mark.parametrize("value", integration_params)
     def test_echo_roundtrip_through_drf(self, api_client, value):
-        request_body = toons.dumps(value).encode("utf-8")
+        request_body = toon_format.dumps(value).encode("utf-8")
 
         response = api_client.post(
             "/echo/",
@@ -189,7 +264,7 @@ class TestTOONIntegration:
 
         assert response.status_code == 200
         assert response["content-type"].startswith("application/toon")
-        assert toons.loads(response.content.decode("utf-8")) == value
+        assert toon_format.loads(response.content.decode("utf-8")) == value
 
     def test_invalid_toon_body_returns_400(self, api_client):
         # Declared array length does not match the number of elements.
@@ -201,3 +276,31 @@ class TestTOONIntegration:
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.parametrize(
+        ("body", "content_type"),
+        [
+            (zlib.compress(b"a: " + b"x" * 1_000_000), "application/toon; charset=zlib"),
+            (b"a: 1", "application/toon; charset=hex"),
+            (b"a: \xff\xfe", "application/toon"),
+            (b"a: 1\n", "application/toon; charset=utf-16"),
+        ],
+        ids=["zlib-bomb", "hex-codec", "invalid-utf8", "charset-mismatch"],
+    )
+    def test_bad_encoding_returns_400_not_500(self, api_client, body, content_type):
+        response = api_client.post(
+            "/echo/", data=body, content_type=content_type, HTTP_ACCEPT="application/toon"
+        )
+
+        assert response.status_code == 400
+
+    def test_raw_non_serializer_data_renders(self, api_client):
+        response = api_client.get("/rich/", HTTP_ACCEPT="application/toon")
+
+        assert response.status_code == 200
+        assert toon_format.loads(response.content.decode("utf-8")) == {
+            "1": "int key",
+            "id": str(uuid.UUID(int=1)),
+            "big": 2**100,
+            "tags": ["a"],
+        }
