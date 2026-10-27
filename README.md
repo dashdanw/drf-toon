@@ -21,17 +21,14 @@ matrix.
 
 ## Installation
 
-Until `drf-toon` is published to PyPI, install it directly from the git
-repository:
-
 ```bash
-pip install git+https://github.com/dashdanw/drf-toon.git
+pip install drf-toon
 ```
 
 Or, with uv:
 
 ```bash
-uv add git+https://github.com/dashdanw/drf-toon.git
+uv add drf-toon
 ```
 
 ## Usage
@@ -42,12 +39,12 @@ Add the parser and renderer to your DRF settings:
 # settings.py
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
-        "drf_toon.parsers.TOONParser",
         "rest_framework.parsers.JSONParser",
+        "drf_toon.parsers.TOONParser",
     ],
     "DEFAULT_RENDERER_CLASSES": [
-        "drf_toon.renderers.TOONRenderer",
         "rest_framework.renderers.JSONRenderer",
+        "drf_toon.renderers.TOONRenderer",
     ],
 }
 ```
@@ -73,6 +70,15 @@ class UserView(APIView):
 Both classes use the `application/toon` media type. Send requests with
 `Content-Type: application/toon` to parse, and `Accept: application/toon`
 (or `?format=toon`) to render.
+
+DRF answers `Accept: */*` with the first renderer, so list `JSONRenderer`
+first to keep JSON the default and serve TOON only when it is requested.
+
+The renderer encodes values through DRF's JSON encoder first, so `UUID`,
+`datetime`, `date` and `Decimal` values render as they do in JSON. `None`
+renders an empty body (like `JSONRenderer`), and `{}` renders a single
+newline, which is the same empty document but keeps DRF from dropping the
+`Content-Type` header.
 
 ## Development
 

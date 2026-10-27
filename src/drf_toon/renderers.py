@@ -1,5 +1,7 @@
+import json
+
 import toons
-from rest_framework.renderers import BaseRenderer
+from rest_framework.renderers import BaseRenderer, JSONRenderer
 
 
 class TOONRenderer(BaseRenderer):
@@ -7,4 +9,9 @@ class TOONRenderer(BaseRenderer):
     format = "toon"
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        return toons.dumps(data).encode(self.charset)
+        if data is None:
+            return b""
+        # toons only serializes plain JSON types; DRF's encoder handles UUID, datetime, Decimal...
+        rendered = toons.dumps(json.loads(JSONRenderer().render(data))).encode(self.charset)
+        # `{}` is zero bytes, so DRF would drop Content-Type; a newline is the same document.
+        return rendered or b"\n"

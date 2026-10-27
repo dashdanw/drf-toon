@@ -8,6 +8,9 @@ nested/mixed structures.
 from __future__ import annotations
 
 import io
+import uuid
+from datetime import date, datetime, timezone
+from decimal import Decimal
 
 import pytest
 import toons
@@ -21,6 +24,14 @@ from .factories import SAMPLE_PAYLOADS
 # One pytest parameter per sample payload, each labelled with its readable id.
 PAYLOAD_PARAMS = [pytest.param(payload.value, id=payload.id) for payload in SAMPLE_PAYLOADS]
 
+# ``None`` means "no data" to DRF, so the renderer emits an empty body (like ``JSONRenderer``)
+# instead of a ``null`` document; it is covered by ``test_render_returns_empty_body_for_no_data``.
+RENDER_PARAMS = [
+    pytest.param(payload.value, id=payload.id)
+    for payload in SAMPLE_PAYLOADS
+    if payload.id != "none"
+]
+
 
 def _make_stream(value: object) -> io.BytesIO:
     """Serialize ``value`` to TOON bytes and wrap it in a byte stream."""
@@ -31,22 +42,51 @@ def _make_stream(value: object) -> io.BytesIO:
 # Renderer
 # --------------------------------------------------------------------------- #
 class TestTOONRenderer:
-    @pytest.mark.parametrize("value", PAYLOAD_PARAMS)
+    @pytest.mark.parametrize("value", RENDER_PARAMS)
     def test_render_matches_toons_dumps(self, value):
         renderer = TOONRenderer()
 
         rendered = renderer.render(value)
 
         assert isinstance(rendered, bytes)
-        assert rendered == toons.dumps(value).encode(renderer.charset)
+        assert rendered == (toons.dumps(value).encode(renderer.charset) or b"\n")
 
-    @pytest.mark.parametrize("value", PAYLOAD_PARAMS)
+    @pytest.mark.parametrize("value", RENDER_PARAMS)
     def test_render_is_parseable_back(self, value):
         renderer = TOONRenderer()
 
         rendered = renderer.render(value)
 
         assert toons.loads(rendered.decode(renderer.charset)) == value
+
+    def test_render_encodes_types_toons_cannot_serialize(self):
+        renderer = TOONRenderer()
+        pk = uuid.uuid4()
+
+        rendered = renderer.render(
+            {
+                "id": pk,
+                "at": datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
+                "on": date(2026, 1, 2),
+                "amount": Decimal("1.50"),
+            }
+        )
+
+        assert toons.loads(rendered.decode(renderer.charset)) == {
+            "id": str(pk),
+            "at": "2026-01-02T03:04:05Z",
+            "on": "2026-01-02",
+            "amount": 1.5,
+        }
+
+    def test_render_empty_object_is_a_non_empty_document(self):
+        rendered = TOONRenderer().render({})
+
+        assert rendered == b"\n"
+        assert toons.loads(rendered.decode()) == {}
+
+    def test_render_returns_empty_body_for_no_data(self):
+        assert TOONRenderer().render(None) == b""
 
     def test_media_type_and_format(self):
         renderer = TOONRenderer()
@@ -105,7 +145,7 @@ class TestTOONParser:
 # --------------------------------------------------------------------------- #
 # Round-trip
 # --------------------------------------------------------------------------- #
-@pytest.mark.parametrize("value", PAYLOAD_PARAMS)
+@pytest.mark.parametrize("value", RENDER_PARAMS)
 def test_render_then_parse_roundtrip(value):
     renderer = TOONRenderer()
     parser = TOONParser()
@@ -127,14 +167,13 @@ class TestTOONIntegration:
     response is rendered.
     """
 
-    # ``{}`` serializes to an empty (zero-byte) TOON document, so the HTTP
-    # response carries no body or Content-Type header. That is a degenerate
-    # transport case, not a parser/renderer concern, and it is already covered
+    # ``None`` renders an empty body, so the HTTP response carries no body or Content-Type header.
+    # That is a degenerate transport case, not a parser/renderer concern, and it is already covered
     # by the unit tests above -- so it is excluded from the end-to-end run.
     integration_params = [
         pytest.param(payload.value, id=payload.id)
         for payload in SAMPLE_PAYLOADS
-        if payload.id != "empty_dict"
+        if payload.id != "none"
     ]
 
     @pytest.mark.parametrize("value", integration_params)
