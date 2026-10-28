@@ -1,7 +1,8 @@
-import toon_format
 from django.conf import settings
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import BaseParser
+
+from drf_toon import _codec
 
 
 class TOONParser(BaseParser):
@@ -22,6 +23,6 @@ class TOONParser(BaseParser):
             raise ParseError(f"TOON parse error - body is not valid {encoding}") from e
 
         try:
-            return toon_format.loads(text)
-        except toon_format.ToonDecodeError as e:
+            return _codec.decode(text)
+        except _codec.DecodeError as e:
             raise ParseError(f"TOON parse error - {str(e)}") from e

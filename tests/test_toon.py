@@ -17,6 +17,7 @@ import pytest
 import toon_format
 from rest_framework.exceptions import ParseError
 
+from drf_toon._codec import NATIVE
 from drf_toon.parsers import TOONParser
 from drf_toon.renderers import TOONRenderer
 
@@ -188,22 +189,39 @@ class TestTOONParser:
     @pytest.mark.parametrize(
         "body",
         [
-            b"a: 1e400",
-            b"a: " + b"9" * 5000,
             b"a: 1\na: 2",
             b"[1000000000]: 1,2",
         ],
-        ids=["out-of-range-float", "huge-integer", "duplicate-key", "declared-length"],
+        ids=["duplicate-key", "declared-length"],
     )
     def test_documents_toon_format_rejects_raise_parse_error(self, body):
         with pytest.raises(ParseError):
             TOONParser().parse(io.BytesIO(body))
 
+    @pytest.mark.skipif(NATIVE, reason="toon-rust decodes unrepresentable numbers as strings")
+    @pytest.mark.parametrize(
+        "body",
+        [b"a: 1e400", b"a: " + b"9" * 5000],
+        ids=["out-of-range-float", "huge-integer"],
+    )
+    def test_unrepresentable_numbers_raise_parse_error(self, body):
+        with pytest.raises(ParseError):
+            TOONParser().parse(io.BytesIO(body))
+
+    @pytest.mark.skipif(not NATIVE, reason="native-codec behavior")
+    @pytest.mark.parametrize(
+        "body",
+        [b"a: 1e400", b"a: " + b"9" * 5000, b"a: 12345678901234567890123"],
+        ids=["out-of-range-float", "huge-integer", "beyond-64-bits"],
+    )
+    def test_native_decodes_unrepresentable_numbers_as_strings(self, body):
+        assert TOONParser().parse(io.BytesIO(body)) == {"a": body[3:].decode()}
+
     def test_extremely_deep_document_raises_parse_error(self):
         depth = 5_000
         text = "".join("  " * i + "a:\n" for i in range(depth)) + "  " * depth + "x: 1\n"
 
-        with pytest.raises(ParseError, match="nested too deeply"):
+        with pytest.raises(ParseError, match="nested too deeply|nesting depth"):
             TOONParser().parse(io.BytesIO(text.encode()))
 
     def test_parse_invalid_toon_raises_parse_error(self):

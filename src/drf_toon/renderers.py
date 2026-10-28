@@ -1,7 +1,6 @@
-import json
-
-import toon_format
 from rest_framework.renderers import BaseRenderer, JSONRenderer
+
+from drf_toon import _codec
 
 
 class TOONRenderer(BaseRenderer):
@@ -12,6 +11,6 @@ class TOONRenderer(BaseRenderer):
         if data is None:
             return b""
         # toon_format follows JSON's data model; DRF's encoder handles UUID, datetime, Decimal...
-        rendered = toon_format.dumps(json.loads(JSONRenderer().render(data))).encode(self.charset)
+        rendered = _codec.encode_json(JSONRenderer().render(data)).encode(self.charset)
         # `{}` is zero bytes, so DRF would drop Content-Type; a newline is the same document.
         return rendered or b"\n"
