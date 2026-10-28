@@ -17,7 +17,7 @@ import pytest
 import toon_format
 from rest_framework.exceptions import ParseError
 
-from drf_toon.parsers import TOONParser
+from drf_toon.parsers import RequestEntityTooLarge, TOONParser
 from drf_toon.renderers import TOONRenderer
 
 from .factories import SAMPLE_PAYLOADS
@@ -199,12 +199,40 @@ class TestTOONParser:
         with pytest.raises(ParseError):
             TOONParser().parse(io.BytesIO(body))
 
-    def test_extremely_deep_document_raises_parse_error(self):
+    def test_extremely_deep_document_raises_parse_error(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = None
         depth = 5_000
         text = "".join("  " * i + "a:\n" for i in range(depth)) + "  " * depth + "x: 1\n"
 
         with pytest.raises(ParseError, match="nested too deeply"):
             TOONParser().parse(io.BytesIO(text.encode()))
+
+    def test_body_over_the_upload_limit_is_rejected(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 7
+
+        with pytest.raises(RequestEntityTooLarge):
+            TOONParser().parse(io.BytesIO(b"a: 12345"))
+
+    def test_body_at_the_upload_limit_is_parsed(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 7
+
+        assert TOONParser().parse(io.BytesIO(b"a: 1234")) == {"a": 1234}
+
+    def test_oversized_body_is_not_read_past_the_limit(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 8
+        stream = io.BytesIO(b"a: " + b"1" * 10_000_000)
+
+        with pytest.raises(RequestEntityTooLarge):
+            TOONParser().parse(stream)
+
+        assert stream.tell() == 9
+
+    def test_upload_limit_can_be_disabled(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = None
+
+        body = b"a: " + b"x" * 3_000_000
+
+        assert TOONParser().parse(io.BytesIO(body)) == {"a": "x" * 3_000_000}
 
     def test_parse_invalid_toon_raises_parse_error(self):
         parser = TOONParser()
@@ -293,6 +321,19 @@ class TestTOONIntegration:
         )
 
         assert response.status_code == 400
+
+    def test_oversized_body_returns_413(self, api_client, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 1024
+
+        response = api_client.post(
+            "/echo/",
+            data=b"a: " + b"x" * 2048,
+            content_type="application/toon",
+            HTTP_ACCEPT="application/toon",
+        )
+
+        assert response.status_code == 413
+        assert response["content-type"].startswith("application/toon")
 
     def test_raw_non_serializer_data_renders(self, api_client):
         response = api_client.get("/rich/", HTTP_ACCEPT="application/toon")

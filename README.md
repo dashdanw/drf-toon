@@ -82,8 +82,13 @@ newline, which is the same empty document but keeps DRF from dropping the
 
 ## Security notes
 
-- **Request size:** `TOONParser` reads the whole body into memory. Like DRF's own parsers it
-  does not cap the size, so set a body limit in your reverse proxy.
+- **Request size:** `TOONParser` rejects bodies larger than Django's `DATA_UPLOAD_MAX_MEMORY_SIZE`
+  (2.5 MiB by default) with a 413, reading at most one byte past the limit. Django itself only
+  applies this setting to `request.body`, which DRF never reads, so JSON bodies are not capped
+  unless you add a limit of your own. `toon-format` is pure Python, so an uncapped TOON body costs
+  far more CPU and memory than the same JSON; a 4 MB document of empty list items takes about a
+  second and 250 MB to parse. Set the limit to what your endpoints need and also cap bodies in
+  your reverse proxy. `None` disables the check.
 - **Charset:** only text charsets are accepted. Compression "charsets" such as `zlib` or `bz2`
   are rejected with a 400, and invalid bytes also return a 400.
 - **Malformed input:** documents that `toon-format` rejects (duplicate keys, out-of-range or

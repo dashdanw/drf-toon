@@ -1,6 +1,6 @@
 [project]
 name = "drf-toon"
-version = "0.3.1"
+version = "0.3.2"
 description = "Native TOON parser and renderer for Django Rest Framework."
 readme = "README.md"
 authors = [
