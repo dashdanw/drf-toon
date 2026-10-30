@@ -201,6 +201,7 @@ class TestTOONParser:
 
     def test_extremely_deep_document_raises_parse_error(self, settings):
         settings.DATA_UPLOAD_MAX_MEMORY_SIZE = None
+        settings.DRF_TOON_MAX_BODY_SIZE = None
         depth = 5_000
         text = "".join("  " * i + "a:\n" for i in range(depth)) + "  " * depth + "x: 1\n"
 
@@ -218,6 +219,56 @@ class TestTOONParser:
 
         assert TOONParser().parse(io.BytesIO(b"a: 1234")) == {"a": 1234}
 
+    def test_toon_has_its_own_lower_default_body_limit(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+        with pytest.raises(RequestEntityTooLarge):
+            TOONParser().parse(io.BytesIO(b"a: " + b"x" * 1024 * 1024))
+
+    def test_toon_body_limit_can_be_raised(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+        settings.DRF_TOON_MAX_BODY_SIZE = 5 * 1024 * 1024
+        body = b"a: " + b"x" * 2 * 1024 * 1024
+
+        assert TOONParser().parse(io.BytesIO(body)) == {"a": "x" * 2 * 1024 * 1024}
+
+    def test_django_upload_limit_still_applies_when_lower(self, settings):
+        settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 7
+        settings.DRF_TOON_MAX_BODY_SIZE = 5 * 1024 * 1024
+
+        with pytest.raises(RequestEntityTooLarge):
+            TOONParser().parse(io.BytesIO(b"a: 12345"))
+
+    def test_nested_field_groups_cannot_multiply_rows_into_millions_of_objects(self):
+        rows, depth = 130_000, 40
+        header = f"x[{rows}]{{" + "a{" * depth + "v" + "}" * depth + "}:\n"
+        body = (header + "  0\n" * rows).encode()
+
+        with pytest.raises(ParseError, match="more than 100000 objects"):
+            TOONParser().parse(io.BytesIO(body))
+
+    def test_object_limit_is_exact(self, settings):
+        settings.DRF_TOON_MAX_OBJECTS = 2
+        parser = TOONParser()
+
+        assert len(parser.parse(io.BytesIO(b"[2]{a}:\n  1\n  2"))) == 2
+        with pytest.raises(ParseError, match="more than 2 objects"):
+            parser.parse(io.BytesIO(b"[3]{a}:\n  1\n  2\n  3"))
+
+    def test_object_limit_can_be_disabled(self, settings):
+        settings.DRF_TOON_MAX_OBJECTS = None
+        rows = 120_000
+        body = (f"[{rows}]{{a}}:\n" + "  1\n" * rows).encode()
+        settings.DRF_TOON_MAX_BODY_SIZE = None
+
+        assert len(TOONParser().parse(io.BytesIO(body))) == rows
+
+    def test_realistic_nested_documents_stay_under_the_object_limit(self):
+        attributes = {"n": 1, "address": {"city": "NYC"}}
+        data = [{"id": i, "data": {"attributes": attributes}} for i in range(5_000)]
+
+        assert TOONParser().parse(io.BytesIO(toon_format.dumps(data).encode())) == data
+
     def test_oversized_body_is_not_read_past_the_limit(self, settings):
         settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 8
         stream = io.BytesIO(b"a: " + b"1" * 10_000_000)
@@ -227,8 +278,9 @@ class TestTOONParser:
 
         assert stream.tell() == 9
 
-    def test_upload_limit_can_be_disabled(self, settings):
+    def test_body_limits_can_be_disabled(self, settings):
         settings.DATA_UPLOAD_MAX_MEMORY_SIZE = None
+        settings.DRF_TOON_MAX_BODY_SIZE = None
 
         body = b"a: " + b"x" * 3_000_000
 

@@ -82,13 +82,17 @@ newline, which is the same empty document but keeps DRF from dropping the
 
 ## Security notes
 
-- **Request size:** `TOONParser` rejects bodies larger than Django's `DATA_UPLOAD_MAX_MEMORY_SIZE`
-  (2.5 MiB by default) with a 413, reading at most one byte past the limit. Django itself only
-  applies this setting to `request.body`, which DRF never reads, so JSON bodies are not capped
-  unless you add a limit of your own. `toon-format` is pure Python, so an uncapped TOON body costs
-  far more CPU and memory than the same JSON; a 4 MB document of empty list items takes about a
-  second and 250 MB to parse. Set the limit to what your endpoints need and also cap bodies in
-  your reverse proxy. `None` disables the check.
+- **Request size:** `TOONParser` rejects bodies larger than the lower of `DRF_TOON_MAX_BODY_SIZE`
+  (1 MiB by default) and Django's `DATA_UPLOAD_MAX_MEMORY_SIZE` with a 413, reading at most one
+  byte past the limit. Django itself only applies `DATA_UPLOAD_MAX_MEMORY_SIZE` to `request.body`,
+  which DRF never reads. `toon-format` is pure Python and takes far more memory per byte than JSON
+  (a 4 MB document of empty list items needs about 250 MB), so TOON gets its own lower default.
+  Raise `DRF_TOON_MAX_BODY_SIZE` if you need larger bodies, and also cap bodies in your reverse
+  proxy. `None` disables a limit.
+- **Object count:** a tabular header can nest field groups (`x[n]{a{a{v}}}`), so every short row
+  decodes into one dict per level and a 520 KB body can need over 1 GB. `TOONParser` rejects
+  documents that decode into more than `DRF_TOON_MAX_OBJECTS` (100,000 by default) objects with a
+  400. `None` disables the limit.
 - **Charset:** only text charsets are accepted. Compression "charsets" such as `zlib` or `bz2`
   are rejected with a 400, and invalid bytes also return a 400.
 - **Malformed input:** documents that `toon-format` rejects (duplicate keys, out-of-range or
